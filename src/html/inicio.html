@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración - Monopoly</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+</head>
+<body class="lobby">
+  <main class="lobby__container">
+    <h1 class="lobby__title">Configuración Inicial</h1>
+
+    <!-- Selección número de jugadores -->
+    <div class="lobby__section">
+      <label for="numPlayers">Número de jugadores:</label>
+      <select id="numPlayers">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      
+    </div>
+
+    <!-- Área dinámica de jugadores -->
+    <div id="playersContainer"></div>
+
+    <!-- Botón de inicio -->
+    <button class="btn btn--start" id="startGame">
+      EMPEZAR PARTIDA
+    </button>
+  </main>
+
+  <script src="../js/inicio.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-pixel);
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Pantalla de bienvenida */
+.welcome__container {
+  text-align: center;
+  background: var(--panel);
+  padding: 2rem;
+  border: 4px solid var(--accent-2);
+  box-shadow: 6px 6px 0px #000000ff;
+}
+
+
+.welcome__image img {
+  width: 200px;
+  image-rendering: pixelated;
+  margin: 1rem 0;
+}
+
+.welcome__text {
+  margin: 1.5rem 0;
+  line-height: 1.6;
+}
+
+.btn {
+  border: none;
+  font-family: var(--font-pixel);
+  cursor: pointer;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.9rem;
+  border: 3px solid #000000ff;
+  box-shadow: 4px 4px 0px #000;
+}
+
+.btn--start {
+  background-color: var(--accent);
+  color: #000;
+}
+
+.btn--start:hover {
+  background-color: var(--accent-2);
+  color: var(--white);
+}
+
+
+
+
+
+
+
+
+
+/* Fondo lobby */
+body.lobby {
+  background: linear-gradient(135deg, #ccfaff 0%, #a8e6e6 100%);
+  padding: 1rem;
+}
+
+/* Contenedor principal */
+.lobby__container {
+  text-align: center;
+  background: var(--panel);
+  padding: 2rem;
+  border: 4px solid var(--accent-2);
+  box-shadow: 6px 6px 0px #000000ff;
+  width: 90%;
+  max-width: 700px;
+  margin: auto;
+  border-radius: 12px;
+}
+
+.lobby__title {
+  margin-bottom: 1rem;
+  color: var(--white);
+}
+
+.lobby__section {
+  margin: 1rem 0;
+}
+
+/* Tarjeta jugador */
+.player-config {
+  margin: 1.5rem 0;
+  background: var(--white);
+  padding: 1rem;
+  border: 2px solid var(--accent-2);
+  box-shadow: 4px 4px 0px #000;
+  text-align: left;
+}
+
+.player-config h2 {
+  margin-bottom: 0.5rem;
+  color: var(--accent-2);
+}
+
+/* Inputs alineados */
+.player-config label {
+  display: inline-block;
+  width: 100px;
+  margin-bottom: 0.5rem;
+}
+
+.player-config input,
+.player-config select {
+  padding: 0.5rem;
+  font-family: var(--font-pixel);
+  font-size: 0.7rem;
+  margin: 0.3rem 0;
+  border: 2px solid #000;
+  background: #fff;
+  width: calc(100% - 110px);
+}
+
+/* Opciones de color */
+select option {
+  font-family: var(--font-pixel);
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lobby__container {
+    padding: 1rem;
+  }
+
+  .player-config label {
+    display: block;
+    width: auto;
+    margin-bottom: 0.3rem;
+  }
+
+  .player-config input,
+  .player-config select {
+    width: 100%;
+  }
+}
+
+
+
