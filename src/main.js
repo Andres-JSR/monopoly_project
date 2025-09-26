@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Punto de entrada principal de la aplicación Monopoly.
+ * 
+ * Este archivo contiene:
+ * - Configuración inicial de la aplicación.
+ * - Lógica de creación del formulario de jugadores.
+ * - Inicialización del juego.
+ * - Vinculación de controles de usuario.
+ * - Gestión del ranking de puntuaciones.
+ * 
+ * @author Teban6515
+ * @version 1.0.0
+ */
+
 import { Api } from './api.js';
 import { Game } from './model/Game.js';
 import { Board } from './model/Board.js';
@@ -9,9 +23,26 @@ import { TurnManager } from './model/TurnManager.js';
 import { Modals } from './ui/Modals.js';
 import { Renderer } from './ui/Renderer.js';
 
+// Inicialización de componentes UI principales
+/** @type {Renderer} Renderizador principal de la interfaz */
 const ui = new Renderer();
+
+/** Configuración de modales en el contenedor designado */
 ui.modals = new Modals(document.getElementById('modalRoot'));
 
+/**
+ * Configura la funcionalidad del ranking de puntuaciones.
+ * 
+ * Vincula el botón de actualizar ranking para:
+ * - Obtener las mejores puntuaciones desde la API.
+ * - Renderizar la lista con banderas de países y puntuaciones.
+ * - Mostrar la información en el elemento 'rankingList'.
+ * 
+ * 🏆 Formato de cada entrada del ranking:
+ * - Bandera del país (usando flagsapi.com).
+ * - Nombre del jugador en negrita.
+ * - Puntuación obtenida.
+ */
 function bindRanking(){
   document.getElementById('refreshRanking').onclick = async ()=>{
     const rk = await Api.getRanking();
@@ -24,11 +55,44 @@ function bindRanking(){
   };
 }
 
+/**
+ * Función principal de arranque que inicializa toda la aplicación.
+ * 
+ * 🚀 Flujo de inicialización:
+ * 1. Carga la lista de países desde la API.
+ * 2. Configura el formulario dinámico de jugadores.
+ * 3. Vincula el botón de inicio del juego.
+ * 4. Configura el sistema de ranking.
+ * 
+ * 👥 Gestión de jugadores:
+ * - Permite seleccionar de 2 a N jugadores.
+ * - Cada jugador tiene: nickname, país, y color de ficha.
+ * - Genera colores aleatorios como valores por defecto.
+ * - Crea nicknames automáticos si se dejan vacíos ("P1", "P2", etc.).
+ * 
+ * 🎮 Inicio del juego:
+ * - Crea instancias de todas las clases necesarias.
+ * - Configura la interfaz de usuario.
+ * - Expone el juego globalmente para debugging (`window.__game`).
+ */
 async function bootstrap(){
   const countries = await Api.getCountries();
   const playerCountSel = document.getElementById('playerCount');
   const playersForm = document.getElementById('playersForm');
 
+  /**
+   * Función anidada que regenera dinámicamente el formulario de jugadores.
+   * 
+   * 📋 Para cada jugador crea:
+   * - Input de texto para el nickname (con placeholder automático).
+   * - Select con todos los países disponibles.
+   * - Input de color con valor hexadecimal aleatorio.
+   * 
+   * 🎨 Generación de colores:
+   * - Genera un número aleatorio de 0 a 0xFFFFFF.
+   * - Lo convierte a hexadecimal y rellena con ceros a 6 dígitos.
+   * - Resultado: colores completamente aleatorios para cada jugador.
+   */
   function drawForm(){
     const n = +playerCountSel.value; playersForm.innerHTML = '';
     for (let i=0;i<n;i++){
@@ -44,6 +108,30 @@ async function bootstrap(){
   }
   playerCountSel.onchange = drawForm; drawForm();
 
+  /**
+   * Manejador del botón "Iniciar Juego".
+   * 
+   * 🏗️ Proceso de creación del juego:
+   * 1. Recopila datos del formulario (nicknames, países, colores).
+   * 2. Crea instancias de Player con datos o valores por defecto.
+   * 3. Instancia todas las clases del modelo de juego.
+   * 4. Configura el objeto de interfaz con métodos del renderizador.
+   * 5. Inicializa el juego y renderiza el estado inicial.
+   * 
+   * 🔧 Configuración de UI:
+   * - `mount`: Vincula el renderizador al juego.
+   * - `renderBoard`: Dibuja el tablero.
+   * - `renderPlayers`: Muestra información de jugadores.
+   * - `renderTokens`: Posiciona fichas en el tablero.
+   * - `bindControls`: Configura botones de control.
+   * - `refresh`: Actualiza toda la interfaz.
+   * - `toast`: Muestra mensajes de notificación.
+   * - `modals`: Sistema de ventanas emergentes.
+   * 
+   * 🌍 Debug global:
+   * El juego se expone como `window.__game` para poder inspeccionarlo
+   * desde las herramientas de desarrollador del navegador.
+   */
   document.getElementById('startBtn').onclick = async ()=>{
     const inputs = [...playersForm.querySelectorAll('.nick')];
     const selects = [...playersForm.querySelectorAll('.country')];
@@ -73,6 +161,27 @@ async function bootstrap(){
   bindRanking();
 }
 
+/**
+ * Configura los controles principales del juego una vez iniciado.
+ * 
+ * 🎲 Botones vinculados:
+ * 
+ * **Lanzar Dados Automático:**
+ * - Ejecuta un lanzamiento aleatorio de dados.
+ * - Mueve al jugador actual según el resultado.
+ * 
+ * **Lanzar Dados Manual:**
+ * - Permite introducir valores específicos para los dados.
+ * - Útil para testing y debugging.
+ * - Valida que ambos valores estén entre 1-6.
+ * 
+ * **Terminar Juego:**
+ * - Finaliza la partida inmediatamente.
+ * - Calcula las posiciones finales.
+ * - Muestra el ranking y registra puntuaciones.
+ * 
+ * @param {Game} game - Instancia del juego a controlar.
+ */
 function bindControls(game){
   document.getElementById('rollBtn').onclick = ()=> game.rollDiceOrManual();
   document.getElementById('rollManualBtn').onclick = ()=>{
@@ -83,4 +192,5 @@ function bindControls(game){
   document.getElementById('endBtn').onclick = ()=> game.endGameManual();
 }
 
+// 🚀 Inicialización automática de la aplicación
 bootstrap();

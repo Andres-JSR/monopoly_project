@@ -1,5 +1,41 @@
+/**
+ * Clase que gestiona todos los modales (ventanas emergentes) del juego de Monopoly.
+ * 
+ * Proporciona modales para:
+ * - Compra de propiedades.
+ * - Gestión de propiedades (construir, hipotecar).
+ * - Mostrar posiciones finales.
+ */
 export class Modals {
-  constructor(root){ this.root = root; }
+  
+  /**
+   * Crea una nueva instancia del gestor de modales.
+   * 
+   * @param {HTMLElement} root - Elemento HTML donde se montarán los modales.
+   */
+  constructor(root){ 
+    /** @type {HTMLElement} Contenedor donde se renderizarán los modales */
+    this.root = root; 
+  }
+
+  /**
+   * Método privado que crea y muestra un modal genérico.
+   * 
+   * @private
+   * @param {Object} param0 - Configuración del modal.
+   * @param {string} param0.title - Título del modal.
+   * @param {string|HTMLElement} param0.body - Contenido del modal (HTML string o elemento).
+   * @param {Array<Object>} [param0.actions=[]] - Array de botones de acción.
+   * @param {string} param0.actions[].label - Texto del botón.
+   * @param {boolean} [param0.actions[].primary] - Si es el botón principal (destacado).
+   * @param {Function} [param0.actions[].onClick] - Función a ejecutar al hacer clic.
+   * 
+   * 🎨 Estructura del modal:
+   * - Backdrop (fondo oscuro semi-transparente).
+   * - Modal con header, contenido y footer.
+   * - Botón de cerrar (✕) en el header.
+   * - Botones de acción en el footer.
+   */
   _open({ title, body, actions = [] }){
     const backdrop = document.createElement('div');
     backdrop.className = 'modal__backdrop';
@@ -22,6 +58,25 @@ export class Modals {
     modal.append(header, content, footer);
     backdrop.appendChild(modal); this.root.appendChild(backdrop);
   }
+
+  /**
+   * Muestra un modal para comprar una propiedad.
+   * 
+   * @param {Object} param0 - Configuración del modal de compra.
+   * @param {Player} param0.player - Jugador que puede comprar la propiedad.
+   * @param {Property} param0.prop - Propiedad disponible para compra.
+   * @param {Function} param0.onBuy - Función a ejecutar si el jugador decide comprar.
+   * 
+   * 📋 Información mostrada:
+   * - Color de la propiedad (franja visual).
+   * - Nombre de la propiedad.
+   * - Precio de compra.
+   * - Renta base que se cobrará.
+   * 
+   * 🔘 Acciones disponibles:
+   * - "Cancelar": Cierra el modal sin comprar.
+   * - "Comprar $XXX": Ejecuta la compra (botón principal).
+   */
   buyProperty({ player, prop, onBuy }){
     const body = document.createElement('div');
     body.innerHTML = `
@@ -41,6 +96,33 @@ export class Modals {
       ]
     });
   }
+
+  /**
+   * Muestra un modal para gestionar una propiedad (construir casas/hotel, hipotecar).
+   * 
+   * @param {Object} param0 - Configuración del modal de gestión.
+   * @param {Player} param0.player - Jugador dueño de la propiedad.
+   * @param {Property} param0.prop - Propiedad a gestionar.
+   * @param {Function} param0.onChange - Función callback que recibe la acción seleccionada.
+   * 
+   * 📋 Información mostrada:
+   * - Nombre de la propiedad.
+   * - Dueño actual ("Tú" si es el jugador, o "Jugador X").
+   * - Número de casas construidas.
+   * - Si tiene hotel construido.
+   * - Estado de hipoteca.
+   * 
+   * 🔧 Acciones disponibles (solo si eres el dueño):
+   * - **Si no está hipotecada:**
+   *   - "Construir Casa ($100)": Construye una casa.
+   *   - "Construir Hotel ($250)": Solo si tiene 4 casas.
+   *   - "Hipotecar (+$)": Obtiene dinero hipotecando la propiedad.
+   * - **Si está hipotecada:**
+   *   - "Levantar Hipoteca (-10%)": Paga para recuperar la propiedad.
+   * 
+   * 📞 Callback `onChange`:
+   * Recibe un string con la acción: 'house', 'hotel', 'mortgage', 'redeem'.
+   */
   manageProperty({ player, prop, onChange }){
     const wrap = document.createElement('div');
     wrap.innerHTML = `<div><strong>${prop.name}</strong></div>
