@@ -402,3 +402,34 @@ body {
 @media (max-width: 900px){
   #toastContainer .toast{ min-width:220px; max-width:300px; font-size:10px; }
 }
+/* ====== Panel de jugadores con propiedades ====== */
+.players-panel .player{
+  display:flex; flex-direction:column; gap:6px; padding:8px;
+  border-bottom:1px dashed #2e3d40;
+}
+.player .row{ display:flex; align-items:center; gap:8px }
+.player .nick{ font-weight:bold }
+.player .money{ margin-left:auto }
+
+.player details{
+  background: var(--card); border:3px solid var(--ink);
+  border-radius:8px; padding:6px 8px;
+}
+.player details summary{
+  cursor:pointer; list-style:none; font-size:11px; outline:none;
+}
+.player details[open] summary{ opacity:.95 }
+
+.prop-list{ margin:6px 0 0 0; padding:0; list-style:none; display:grid; gap:6px }
+.prop-item{
+  background:#0e1617; border:2px solid var(--ink);
+  border-radius:6px; padding:6px; display:flex; gap:8px; align-items:center;
+  font-size:10px;
+}
+.prop-item .stripe{ width:8px; height:16px; border:2px solid #000; }
+.prop-item .name{ font-weight:600 }
+.prop-item .badge{ margin-left:auto; font-size:10px; padding:2px 6px;
+  border:2px solid var(--ink); border-radius:6px; }
+.badge.mort{ background:#402d2d; color:#fff }   /* hipotecada */
+.badge.hh{ background:#2b3b2d; color:#fff }     /* casas/hotel */
+.badge.rr{ background:#26334f; color:#fff }     /* railroad/utility */

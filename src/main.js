@@ -163,7 +163,18 @@ async function bootstrap() {
           tokenColor: colors[i].value,
         })
     );
-
+    const rawNicks = inputs.map((inp, i) => (inp.value || `P${i + 1}`).trim());
+    const normalized = rawNicks.map((n) => n.toLowerCase());
+    const hasDupes = new Set(normalized).size !== normalized.length;
+    if (hasDupes) {
+      // usa tu notifier si lo tienes expuesto (ya lo tienes como `notifier`)
+      notifier?.warn?.(
+        "Hay nombres de jugador repetidos. Cámbialos para continuar.",
+        "Nicks duplicados"
+      );
+      return; // corta aquí
+    }
+    
     const game = new Game({
       board: new Board(Api),
       players,

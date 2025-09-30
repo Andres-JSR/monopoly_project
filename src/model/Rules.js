@@ -191,12 +191,24 @@ export class Rules {
             onBuy: () => {
               player.pay(tile.price);
               tile.ownerId = player.id;
+              if (!player.properties) player.properties = new Set();
               player.properties.add(tile.id);
               game.ui.refresh();
             },
           });
         }
-        if (tile.ownerId !== player.id && !tile.mortgaged) {
+
+        // si tiene dueño y está hipotecada → no cobra
+        if (tile.ownerId !== player.id && tile.mortgaged) {
+          game.ui?.notifier?.info(
+            `${tile.name} está hipotecada. No se cobra renta.`,
+            "Sin renta"
+          );
+          return;
+        }
+
+        // tiene dueño distinto → cobrar
+        if (tile.ownerId !== player.id) {
           const rent = tile.getRent();
           player.pay(rent);
           const owner = game.players.find((p) => p.id === tile.ownerId);
@@ -204,6 +216,8 @@ export class Rules {
           game.ui.toast(`${player.nick} paga renta $${rent} a ${owner.nick}`);
           return;
         }
+
+        // es mía → gestionar
         return game.ui.modals.manageProperty({
           player,
           prop: tile,
@@ -215,97 +229,120 @@ export class Rules {
               case "hotel":
                 this.buildHotel(game, player, tile);
                 break;
-              case "mortgage":
-                game.bank.payMortgage(tile, player);
+              case "mortgage": {
+                const r = game.bank?.payMortgage(tile, player);
+                if (r?.ok)
+                  game.ui?.notifier?.success(
+                    `Recibes $${r.amount} por hipotecar ${tile.name}`,
+                    "Hipoteca"
+                  );
+                else
+                  game.ui?.notifier?.warn(r?.error || "No se pudo hipotecar.");
                 break;
-              case "redeem":
-                game.bank.redeemMortgage(tile, player);
+              }
+              case "redeem": {
+                const r = game.bank?.redeemMortgage(tile, player);
+                if (r?.ok)
+                  game.ui?.notifier?.success(
+                    `Pagas $${r.amount} para levantar hipoteca de ${tile.name}`,
+                    "Hipoteca"
+                  );
+                else
+                  game.ui?.notifier?.warn(
+                    r?.error || "No se pudo levantar hipoteca."
+                  );
                 break;
+              }
             }
             game.ui.refresh();
           },
         });
+
       case "railroad": {
-        // Si no tiene dueño: abre el popup de compra (igual que property)
+        // comprar si no tiene dueño
         if (!tile.ownerId) {
-          if (game.ui?.modals?.buyProperty) {
-            return game.ui.modals.buyProperty({
-              player,
-              prop: tile,
-              onBuy: () => {
-                // Usa tus helpers reales si existen:
-                if (player.pay) player.pay(tile.price);
-                else player.money -= tile.price;
-
-                tile.ownerId = player.id;
-                if (player.properties?.add) player.properties.add(tile.id);
-                else {
-                  player.properties = player.properties || new Set();
-                  player.properties.add(tile.id);
-                }
-                game.ui.refresh?.();
-              },
-            });
-          }
-          // Si no tienes modal, opcionalmente compra directa:
-          return;
-        }
-
-        // Si tiene dueño distinto y NO está hipotecado: cobrar renta
-        if (tile.ownerId !== player.id && !tile.mortgaged) {
-          const owner = game.players.find((p) => p.id === tile.ownerId);
-
-          // Cuenta cuántos ferrocarriles tiene el dueño
-          const railsOwned = game.board.tiles.filter(
-            (t) => t.type === "railroad" && t.ownerId === owner.id
-          ).length;
-
-          // Tabla clásica Monopoly: 1=25, 2=50, 3=100, 4=200
-          const table = [25, 50, 100, 200];
-          const rent = table[Math.max(0, Math.min(railsOwned, 4)) - 1] || 25;
-
-          // Transferir dinero
-          if (player.pay) player.pay(rent);
-          else player.money -= rent;
-          if (owner.receive) owner.receive(rent);
-          else owner.money += rent;
-
-          // Aviso bonito
-          game.ui?.notifier?.info(
-            `${player.nick} paga $${rent} a ${owner.nick}`,
-            tile.name || "Ferrocarril"
-          );
-
-          game.ui.refresh?.();
-          return;
-        }
-
-        // Gestión del propio ferrocarril (hipoteca / levantar hipoteca)
-        if (game.ui?.modals?.manageProperty) {
-          return game.ui.modals.manageProperty({
+          return game.ui.modals.buyProperty({
             player,
             prop: tile,
-            onChange: (action) => {
-              switch (action) {
-                case "mortgage":
-                  game.bank?.payMortgage
-                    ? game.bank.payMortgage(tile, player)
-                    : null;
-                  break;
-                case "redeem":
-                  game.bank?.redeemMortgage
-                    ? game.bank.redeemMortgage(tile, player)
-                    : null;
-                  break;
-              }
+            onBuy: () => {
+              player.pay
+                ? player.pay(tile.price)
+                : (player.money -= tile.price);
+              tile.ownerId = player.id;
+              if (!player.properties) player.properties = new Set();
+              player.properties.add(tile.id);
               game.ui.refresh?.();
             },
           });
         }
-        return;
+
+        // si tiene dueño distinto y está hipotecada → no cobra
+        if (tile.ownerId !== player.id && tile.mortgaged) {
+          game.ui?.notifier?.info(
+            `${tile.name} está hipotecada. No se cobra renta.`,
+            "Sin renta"
+          );
+          return;
+        }
+
+        // si tiene dueño distinto → cobrar según #RR del dueño
+        if (tile.ownerId !== player.id) {
+          const owner = game.players.find((p) => p.id === tile.ownerId);
+          const railsOwned = game.board.tiles.filter(
+            (t) => t.type === "railroad" && t.ownerId === owner.id
+          ).length;
+          const table = [25, 50, 100, 200];
+          const rent = table[Math.max(0, Math.min(railsOwned, 4)) - 1] || 25;
+
+          player.pay ? player.pay(rent) : (player.money -= rent);
+          owner.receive ? owner.receive(rent) : (owner.money += rent);
+
+          game.ui?.notifier?.info(
+            `${player.nick} paga $${rent} a ${owner.nick}`,
+            tile.name || "Ferrocarril"
+          );
+          game.ui.refresh?.();
+          return;
+        }
+
+        // es mía → gestionar hipoteca
+        return game.ui.modals.manageProperty({
+          player,
+          prop: tile,
+          onChange: (action) => {
+            switch (action) {
+              case "mortgage": {
+                const r = game.bank?.payMortgage(tile, player);
+                if (r?.ok)
+                  game.ui?.notifier?.success(
+                    `Recibes $${r.amount} por hipotecar ${tile.name}`,
+                    "Hipoteca"
+                  );
+                else
+                  game.ui?.notifier?.warn(r?.error || "No se pudo hipotecar.");
+                break;
+              }
+              case "redeem": {
+                const r = game.bank?.redeemMortgage(tile, player);
+                if (r?.ok)
+                  game.ui?.notifier?.success(
+                    `Pagas $${r.amount} para levantar hipoteca de ${tile.name}`,
+                    "Hipoteca"
+                  );
+                else
+                  game.ui?.notifier?.warn(
+                    r?.error || "No se pudo levantar hipoteca."
+                  );
+                break;
+              }
+            }
+            game.ui.refresh?.();
+          },
+        });
       }
       case "tax": {
-        const amount = tile.value ?? 100;
+        const raw = Number(tile.value ?? -100); 
+        const amount = Math.abs(raw) || 100;
         player.pay(amount);
         game.ui.toast(`${player.nick} paga impuesto $${amount}`);
         return;

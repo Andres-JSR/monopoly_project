@@ -82,7 +82,6 @@ export class Board {
       if (typeof d.rent === "number") return d.rent;
       // Defaults razonables por tipo
       if (type === "railroad") return 25; // clásico: 25
-      if (type === "utility") return 0; // utilities calculan por dados
       return 0;
     };
     this.tiles = flat.map((raw) => {
