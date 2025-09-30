@@ -18,16 +18,42 @@ export class Notifier {
   show({ title, message, kind = "info", timeout = 4500 }) {
     const el = document.createElement("div");
     el.className = `toast ${kind}`;
+
+    const icons = { success: "✅", info: "ℹ️", warn: "⚠️", error: "⛔" };
     el.innerHTML = `
+    <span class="icon">${icons[kind] || "ℹ️"}</span>
+    <div class="content">
       ${title ? `<strong>${title}</strong>` : ""}
       <span>${message}</span>
-    `;
+    </div>
+    <button class="close" aria-label="Cerrar">&times;</button>
+  `;
+
     this.container.appendChild(el);
-    const kill = () => el.remove();
-    el.addEventListener("animationend", (e) => {
-      if (e.animationName === "toast-out") kill();
+
+    // Cerrar manual
+    const remove = () => el.remove();
+    el.querySelector(".close").addEventListener("click", remove);
+
+    // Pausa al hover
+    let timer = setTimeout(remove, timeout);
+    el.addEventListener("mouseenter", () => clearTimeout(timer));
+    el.addEventListener("mouseleave", () => {
+      timer = setTimeout(remove, 1000);
     });
-    setTimeout(kill, timeout + 600);
+
+    // Fallback visible si la animación no corre
+    requestAnimationFrame(() => {
+      const st = getComputedStyle(el);
+      if (st.opacity === "0" || st.animationName === "none") {
+        el.classList.add("show");
+      }
+    });
+
+    // También removemos al terminar la animación de salida (si existe)
+    el.addEventListener("animationend", (e) => {
+      if (e.animationName === "toast-out") remove();
+    });
   }
 
   success(msg, title = "¡Bien!") {

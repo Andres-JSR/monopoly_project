@@ -225,6 +225,85 @@ export class Rules {
             game.ui.refresh();
           },
         });
+      case "railroad": {
+        // Si no tiene dueño: abre el popup de compra (igual que property)
+        if (!tile.ownerId) {
+          if (game.ui?.modals?.buyProperty) {
+            return game.ui.modals.buyProperty({
+              player,
+              prop: tile,
+              onBuy: () => {
+                // Usa tus helpers reales si existen:
+                if (player.pay) player.pay(tile.price);
+                else player.money -= tile.price;
+
+                tile.ownerId = player.id;
+                if (player.properties?.add) player.properties.add(tile.id);
+                else {
+                  player.properties = player.properties || new Set();
+                  player.properties.add(tile.id);
+                }
+                game.ui.refresh?.();
+              },
+            });
+          }
+          // Si no tienes modal, opcionalmente compra directa:
+          return;
+        }
+
+        // Si tiene dueño distinto y NO está hipotecado: cobrar renta
+        if (tile.ownerId !== player.id && !tile.mortgaged) {
+          const owner = game.players.find((p) => p.id === tile.ownerId);
+
+          // Cuenta cuántos ferrocarriles tiene el dueño
+          const railsOwned = game.board.tiles.filter(
+            (t) => t.type === "railroad" && t.ownerId === owner.id
+          ).length;
+
+          // Tabla clásica Monopoly: 1=25, 2=50, 3=100, 4=200
+          const table = [25, 50, 100, 200];
+          const rent = table[Math.max(0, Math.min(railsOwned, 4)) - 1] || 25;
+
+          // Transferir dinero
+          if (player.pay) player.pay(rent);
+          else player.money -= rent;
+          if (owner.receive) owner.receive(rent);
+          else owner.money += rent;
+
+          // Aviso bonito
+          game.ui?.notifier?.info(
+            `${player.nick} paga $${rent} a ${owner.nick}`,
+            tile.name || "Ferrocarril"
+          );
+
+          game.ui.refresh?.();
+          return;
+        }
+
+        // Gestión del propio ferrocarril (hipoteca / levantar hipoteca)
+        if (game.ui?.modals?.manageProperty) {
+          return game.ui.modals.manageProperty({
+            player,
+            prop: tile,
+            onChange: (action) => {
+              switch (action) {
+                case "mortgage":
+                  game.bank?.payMortgage
+                    ? game.bank.payMortgage(tile, player)
+                    : null;
+                  break;
+                case "redeem":
+                  game.bank?.redeemMortgage
+                    ? game.bank.redeemMortgage(tile, player)
+                    : null;
+                  break;
+              }
+              game.ui.refresh?.();
+            },
+          });
+        }
+        return;
+      }
       case "tax": {
         const amount = tile.value ?? 100;
         player.pay(amount);

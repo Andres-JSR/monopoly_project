@@ -105,13 +105,24 @@ export class Game {
    */
   async movePlayer(player, steps){
     let curr = player.position;
-    for (let i=0; i<steps; i++){
+    for (let i = 0; i < steps; i++) {
       curr = this.board.advance(curr, 1);
       player.position = curr;
       this.ui.renderTokens(this.players);
-      await new Promise(r => setTimeout(r, 180));
+      await new Promise((r) => setTimeout(r, 180));
     }
+    // Obtiene casilla
     const tile = this.board.getTile(curr);
+
+    // 📢 Aviso de turno / casilla aterrizada (evita property porque tiene su propio popup)
+    try {
+      if (tile?.type && tile.type !== "property") {
+        const turnNo = this.turns?.turnNumber || 1;
+        const title = `Turno ${turnNo}`;
+        const msg = `${this.turns.currentPlayer().nick} cayó en “${tile.name}”`;
+        this.ui?.notifier?.info(msg, title);
+      }
+    } catch (_) {}
     await this.rules.resolveTile({ game: this, player, tile });
     this.ui.refresh();
     if (!this.ended) this.turns.next();
