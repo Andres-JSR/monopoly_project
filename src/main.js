@@ -22,6 +22,7 @@ import { Dice } from './model/Dice.js';
 import { TurnManager } from './model/TurnManager.js';
 import { Modals } from './ui/Modals.js';
 import { Renderer } from './ui/Renderer.js';
+import { Notifier } from "./ui/Notifier.js";
 
 // Inicialización de componentes UI principales
 /** @type {Renderer} Renderizador principal de la interfaz */
@@ -79,7 +80,7 @@ async function bootstrap() {
   const countries = await Api.getCountries();
   const playerCountSel = document.getElementById('playerCount');
   const playersForm = document.getElementById('playersForm');
-
+  const notifier = new Notifier();
   /**
    * Función anidada que regenera dinámicamente el formulario de jugadores.
    * 
@@ -139,18 +140,33 @@ async function bootstrap() {
     const players = inputs.map((inp, i) => new Player({ id: i + 1, nick: inp.value || `P${i + 1}`, country: selects[i].value, tokenColor: colors[i].value }));
 
     const game = new Game({
-      board: new Board(Api), players, bank: new Bank(), rules: new Rules({ dice: new Dice() }),
-      turnManager: new TurnManager(), ui: {
+      board: new Board(Api),
+      players,
+      bank: new Bank(),
+      rules: new Rules({ dice: new Dice() }),
+      turnManager: new TurnManager(),
+      ui: {
         mount: (g) => ui.mount(g),
         renderBoard: (b) => ui.renderBoard(b),
         renderPlayers: (p) => ui.renderPlayers(p),
         renderTokens: (p) => ui.renderTokens(p),
         bindControls: (g) => bindControls(g),
-        refresh: () => { ui.renderPlayers(game.players); ui.renderBoard(game.board); ui.renderTokens(game.players); },
-        toast: (m) => ui.toast(m),
-        modals: ui.modals
+        refresh: () => {
+          ui.renderPlayers(game.players);
+          ui.renderBoard(game.board);
+          ui.renderTokens(game.players);
+        },
+
+        // 👉 usa el Notifier para cualquier “toast” viejo que llames desde otros lados
+        toast: (m) => notifier.info(m),
+
+        // 👉 expón el notifier para que Rules/TurnManager lo usen
+        notifier,
+
+        // Modales ya existentes
+        modals: ui.modals,
       },
-      api: Api
+      api: Api,
     });
 
     window.__game = game;
