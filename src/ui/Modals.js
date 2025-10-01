@@ -111,47 +111,35 @@ export class Modals {
   }
 
   /**
-   * Muestra un modal para gestionar una propiedad (construir casas/hotel, hipotecar).
-   *
-   * @param {Object} param0 - Configuración del modal de gestión.
-   * @param {Player} param0.player - Jugador dueño de la propiedad.
-   * @param {Property} param0.prop - Propiedad a gestionar.
-   * @param {Function} param0.onChange - Función callback que recibe la acción seleccionada.
-   *
-   * 📋 Información mostrada:
-   * - Nombre de la propiedad.
-   * - Dueño actual ("Tú" si es el jugador, o "Jugador X").
-   * - Número de casas construidas.
-   * - Si tiene hotel construido.
-   * - Estado de hipoteca.
-   *
-   * 🔧 Acciones disponibles (solo si eres el dueño):
-   * - **Si no está hipotecada:**
-   *   - "Construir Casa ($100)": Construye una casa.
-   *   - "Construir Hotel ($250)": Solo si tiene 4 casas.
-   *   - "Hipotecar (+$)": Obtiene dinero hipotecando la propiedad.
-   * - **Si está hipotecada:**
-   *   - "Levantar Hipoteca (-10%)": Paga para recuperar la propiedad.
-   *
-   * 📞 Callback `onChange`:
-   * Recibe un string con la acción: 'house', 'hotel', 'mortgage', 'redeem'.
+   * Muestra un modal para gestionar una propiedad.
+   * @param {Object} param0
+   * @param {Player} param0.player
+   * @param {Property} param0.prop
+   * @param {Function} param0.onChange
+   * @param {Object} [param0.can] - permisos calculados por Rules
+   * @param {boolean} [param0.can.house=false]
+   * @param {boolean} [param0.can.hotel=false]
+   * @param {Object} [param0.prices] - precios visuales
+   * @param {number} [param0.prices.house=100]
+   * @param {number} [param0.prices.hotel=250]
    */
-  manageProperty({ player, prop, onChange }) {
-    const canMortgage = !prop.mortgaged && prop.ownerId === player.id;
-    const canRedeem = prop.mortgaged && prop.ownerId === player.id;
+  manageProperty({ player, prop, onChange, can = {}, prices = {} }) {
+    const canHouse = !!can.house;
+    const canHotel = !!can.hotel;
+    const priceHouse = prices.house ?? 100;
+    const priceHotel = prices.hotel ?? 250;
+
     const mortValue = Number(
       prop.mortgage ?? Math.floor((prop.price || 0) / 2) ?? 0
     );
     const redeemValue = Math.ceil(mortValue * 1.1);
 
-    // Evita backticks anidados: calcula el rótulo del dueño antes
-    const ownerLabel =
-      prop.ownerId === player.id ? "Tú" : "Jugador " + (prop.ownerId ?? "—");
-
     const wrap = document.createElement("div");
     wrap.innerHTML = `
     <div><strong>${prop.name}</strong></div>
-    <div style="margin:6px 0">Dueño: ${ownerLabel}</div>
+    <div style="margin:6px 0">Dueño: ${
+      prop.ownerId === player.id ? "Tú" : `Jugador ${prop.ownerId}`
+    }</div>
     <div>Casas: ${prop.houses} ${prop.hotel ? "(Hotel)" : ""}</div>
     <div>Hipotecada: ${prop.mortgaged ? "Sí" : "No"}</div>
   `;
@@ -159,21 +147,27 @@ export class Modals {
     const actions = [];
     if (prop.ownerId === player.id) {
       if (!prop.mortgaged) {
-        actions.push({
-          label: "Construir Casa (100)",
-          onClick: () => onChange?.("house"),
-        });
-        if (prop.houses === 4 && !prop.hotel) {
+        // Construir casa (solo si Rules lo permite)
+        if (canHouse) {
           actions.push({
-            label: "Construir Hotel (250)",
+            label: `Construir Casa ($${priceHouse})`,
+            onClick: () => onChange?.("house"),
+          });
+        }
+        // Construir hotel (si procede)
+        if (canHotel) {
+          actions.push({
+            label: `Construir Hotel ($${priceHotel})`,
             onClick: () => onChange?.("hotel"),
           });
         }
+        // Hipotecar (si no está hipotecada)
         actions.push({
           label: `Hipotecar (+$${mortValue})`,
           onClick: () => onChange?.("mortgage"),
         });
       } else {
+        // Levantar hipoteca
         actions.push({
           label: `Levantar Hipoteca (-$${redeemValue})`,
           onClick: () => onChange?.("redeem"),
@@ -184,6 +178,7 @@ export class Modals {
 
     this._open({ title: `Gestionar ${prop.name}`, body: wrap, actions });
   }
+
   showStandings(standings) {
     const body = document.createElement("div");
     body.innerHTML = `
@@ -205,21 +200,20 @@ export class Modals {
         .join("")}
     </ul>
   `;
-   this._open({
-     title: "Posiciones finales",
-     body,
-     actions: [
-       { label: "Cerrar", primary: true },
-       {
-         label: "Volver al inicio",
-         onClick: () => {
-           document.getElementById("gameRoot")?.classList.add("hidden");
-           document.getElementById("gameFooter")?.classList.add("hidden");
-           document.getElementById("startScreen")?.classList.remove("hidden");
-         },
-       },
-     ],
-   });
-
+    this._open({
+      title: "Posiciones finales",
+      body,
+      actions: [
+        { label: "Cerrar", primary: true },
+        {
+          label: "Volver al inicio",
+          onClick: () => {
+            document.getElementById("gameRoot")?.classList.add("hidden");
+            document.getElementById("gameFooter")?.classList.add("hidden");
+            document.getElementById("startScreen")?.classList.remove("hidden");
+          },
+        },
+      ],
+    });
   }
 }

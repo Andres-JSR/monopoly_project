@@ -62,11 +62,13 @@ export class Rules {
    * - El jugador debe poseer todo el conjunto de color (monopolio).
    */
   canBuildHouse(game, player, prop) {
-    if (prop.ownerId !== player.id || prop.hotel || prop.houses >= 4)
-      return false;
+    // Debe ser dueño, no tener hotel, < 4 casas, NO hipotecada y monopolio del color
+    if (prop.ownerId !== player.id) return false;
+    if (prop.hotel) return false;
+    if (prop.houses >= 4) return false;
+    if (prop.mortgaged) return false;
     return this.ownsColorSet(game, player, prop.color);
   }
-
   /**
    * Construye una casa en una propiedad.
    *
@@ -113,10 +115,15 @@ export class Rules {
    * - El hotel genera la máxima renta de la propiedad.
    */
   buildHotel(game, player, prop) {
-    if (prop.ownerId !== player.id || prop.hotel || prop.houses !== 4)
-      return false;
+    // Dueño, sin hotel, EXACTAMENTE 4 casas, NO hipotecada, dinero suficiente
+    if (prop.ownerId !== player.id) return false;
+    if (prop.hotel) return false;
+    if (prop.houses !== 4) return false;
+    if (prop.mortgaged) return false;
+
     const cost = 250;
     if (player.money < cost) return false;
+
     player.pay(cost);
     prop.hotel = true;
     prop.houses = 0;
@@ -217,18 +224,48 @@ export class Rules {
           return;
         }
 
-        // es mía → gestionar
         return game.ui.modals.manageProperty({
           player,
           prop: tile,
+          can: {
+            house: this.canBuildHouse(game, player, tile), // monopolio, no hipotecada, sin hotel, <4 casas
+            hotel:
+              tile.ownerId === player.id &&
+              !tile.mortgaged && // dueño y no hipotecada
+              tile.houses === 4 &&
+              !tile.hotel, // 4 casas exactas y sin hotel
+          },
+          prices: { house: 100, hotel: 250 },
           onChange: (action) => {
             switch (action) {
-              case "house":
-                this.buildHouse(game, player, tile);
+              case "house": {
+                const ok = this.buildHouse(game, player, tile);
+                if (ok)
+                  game.ui?.notifier?.success(
+                    `Construiste una casa en ${tile.name}. -$100`,
+                    "Construcción"
+                  );
+                else
+                  game.ui?.notifier?.warn(
+                    "No puedes construir casa aquí (revisa monopolio, hipoteca o saldo).",
+                    "Construcción"
+                  );
                 break;
-              case "hotel":
-                this.buildHotel(game, player, tile);
+              }
+              case "hotel": {
+                const ok = this.buildHotel(game, player, tile);
+                if (ok)
+                  game.ui?.notifier?.success(
+                    `Construiste un hotel en ${tile.name}. -$250`,
+                    "Construcción"
+                  );
+                else
+                  game.ui?.notifier?.warn(
+                    "No puedes construir hotel (requiere 4 casas, no hipotecada y saldo).",
+                    "Construcción"
+                  );
                 break;
+              }
               case "mortgage": {
                 const r = game.bank?.payMortgage(tile, player);
                 if (r?.ok)
@@ -236,8 +273,7 @@ export class Rules {
                     `Recibes $${r.amount} por hipotecar ${tile.name}`,
                     "Hipoteca"
                   );
-                else
-                  game.ui?.notifier?.warn(r?.error || "No se pudo hipotecar.");
+                else game.ui?.notifier?.error("No se pudo hipotecar.");
                 break;
               }
               case "redeem": {
@@ -257,6 +293,7 @@ export class Rules {
             game.ui.refresh();
           },
         });
+
 
       case "railroad": {
         // comprar si no tiene dueño
@@ -341,7 +378,7 @@ export class Rules {
         });
       }
       case "tax": {
-        const raw = Number(tile.value ?? -100); 
+        const raw = Number(tile.value ?? -100);
         const amount = Math.abs(raw) || 100;
         player.pay(amount);
         game.ui.toast(`${player.nick} paga impuesto $${amount}`);
