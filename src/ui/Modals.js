@@ -205,10 +205,21 @@ export class Modals {
         .join("")}
     </ul>
   `;
-    this._open({
-      title: "Posiciones finales",
-      body,
-      actions: [{ label: "Cerrar", primary: true }],
-    });
+   this._open({
+     title: "Posiciones finales",
+     body,
+     actions: [
+       { label: "Cerrar", primary: true },
+       {
+         label: "Volver al inicio",
+         onClick: () => {
+           document.getElementById("gameRoot")?.classList.add("hidden");
+           document.getElementById("gameFooter")?.classList.add("hidden");
+           document.getElementById("startScreen")?.classList.remove("hidden");
+         },
+       },
+     ],
+   });
+
   }
 }

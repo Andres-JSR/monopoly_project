@@ -4,30 +4,64 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Monopoly Retro</title>
+
+  <!-- Fuente -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=clock1" />
-  <script type="module" src="../src/main.js"></script>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Tu JS: usa defer para que el DOM exista cuando corra bootstrap() -->
+  <script type="module" src="../src/main.js" defer></script>
 </head>
 <body>
-  <header class="app-header crt">
-    <div class="logo-title">
-      <img src="./assets/mr.svg" alt="Mr. M" class="mr" />
-      <h1>MONOPOLY
-        RETRO
-      </h1>
-    </div>
-    <div class="setup">
-      <label>Jugadores:
-        <select id="playerCount">
-          <option>2</option><option>3</option><option>4</option>
-        </select>
-      </label>
-      <div id="playersForm"></div>
-      <button id="startBtn" class="btn btn-primary">▶ Iniciar</button>
-    </div>
-  </header>
+  <!-- ===== Pantalla inicial (LOGIN) ===== -->
+ <!-- PANTALLA INICIAL -->
+<section id="startScreen" class="start-screen crt">
+  <!-- HERO -->
+  <div class="hero">
+    <h1 class="brand">MONOPOLY</h1>
 
-  <main class="layout">
+    <div class="hero-card pixel">
+      <div class="hero-frame">
+        <!-- Usa tu imagen. Si tienes otra (png), cámbiala aquí -->
+        <img src="./assets/sr_monopoly.jpeg" alt="Mr. Monopoly" class="hero-img" />
+      </div>
+
+      <p class="tagline">
+        ¿Quieres ser un magnate? ¡Dale click al botón para jugar!
+      </p>
+
+      <button id="heroPlayBtn" class="btn btn-primary btn-lg">JUGAR</button>
+    </div>
+  </div>
+
+  <!-- SETUP (formulario) -->
+  <div class="start-inner">
+    <div class="card start-card pixel" id="setupCard">
+      <h2 class="setup-title">Selecciona el número de jugadores</h2>
+
+      <div class="setup-row">
+        <select id="playerCount">
+          <option value="" disabled selected>Seleccionar</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+        </select>
+      </div>
+
+      <div id="playersForm" class="players-form"></div>
+
+      <div class="actions">
+        <button id="startBtn" class="btn btn-primary">▶ Iniciar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  <!-- ===== Juego (se muestra tras iniciar) ===== -->
+  <main id="gameRoot" class="layout hidden">
     <section class="board-wrap">
       <div id="board" class="board pixel"></div>
     </section>
@@ -55,12 +89,12 @@
     </aside>
   </main>
 
+  <!-- Contenedores globales que usa la UI -->
   <div id="modalRoot"></div>
   <div id="tooltipRoot"></div>
 
-  <footer class="footer crt">
+  <footer id="gameFooter" class="footer crt hidden">
     <p>LA FORTUNA ES PARA QUIENES SE ARRIESGAN - MONOPOLY RETRO</p>
   </footer>
-
 </body>
 </html>

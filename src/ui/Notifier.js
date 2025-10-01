@@ -7,10 +7,14 @@ export class Notifier {
   ensureContainer() {
     let el = document.getElementById("toastContainer");
     if (!el) {
+      const mount =
+        document.getElementById("alertsSide") ||
+        document.querySelector(".sidebar") ||
+        document.body;
+
       el = document.createElement("div");
       el.id = "toastContainer";
-      el.className = "toast-container";
-      document.body.appendChild(el);
+      mount.appendChild(el);
     }
     return el;
   }

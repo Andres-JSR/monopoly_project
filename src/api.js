@@ -1,108 +1,76 @@
+// src/api.js
 /**
  * URL base del servidor backend del juego de Monopoly.
- * 
- * @constant {string}
  */
-const BASE = 'http://127.0.0.1:5000';
+const BASE = "http://127.0.0.1:5000";
 
 /**
- * Clase estática que maneja todas las comunicaciones con la API externa del juego.
- * 
- * Proporciona métodos para:
- * - Ob
- * +tener la lista de países disponibles.
- * - Cargar la configuración del tablero.
- * - Consultar el ranking de puntuaciones.
- * - Registrar nuevas puntuaciones.
+ * Cliente de API del backend (solo endpoints existentes).
  */
 export const Api = {
   /**
-   * Obtiene la lista de países disponibles para seleccionar en el juego.
-   *
-   * @async
-   * @returns {Promise<Array<Object>>} Array de objetos país con formato:
-   *   - `code` {string}: Código ISO del país (ej: "US", "ES", "MX").
-   *   - `name` {string}: Nombre completo del país.
-   *
-   * @throws {Error} Si hay problemas de conexión con la API.
-   *
-   * @example
-   * const countries = await Api.getCountries();
-   * // [{code: "US", name: "United States"}, {code: "ES", name: "Spain"}]
+   * GET /countries
+   * Backend devuelve: [{ "US":"United States" }, { "CO":"Colombia" }, ...]
    */
   async getCountries() {
-    const r = await fetch(`${BASE}/countries`);
+    const r = await fetch(`${BASE}/countries`, { mode: "cors" });
+    if (!r.ok) throw new Error(`GET /countries -> ${r.status}`);
     const arr = await r.json();
     return arr.map((obj) => {
       const code = Object.keys(obj)[0];
-      const name = obj[code];
-      return { code, name };
+      return { code, name: obj[code] };
     });
   },
 
   /**
-   * Obtiene la configuración completa del tablero de juego.
-   *
-   * @async
-   * @returns {Promise<Object>} Objeto con la estructura del tablero organizada en bandas:
-   *   - `bottom` {Array}: Casillas de la fila inferior.
-   *   - `left` {Array}: Casillas de la columna izquierda.
-   *   - `top` {Array}: Casillas de la fila superior.
-   *   - `right` {Array}: Casillas de la columna derecha.
-   *
-   * Cada casilla contiene información como: id, name, type, price, rent, etc.
-   *
-   * @throws {Error} Si hay problemas de conexión con la API.
+   * GET /board
    */
   async getBoard() {
-    const r = await fetch(`${BASE}/board`);
+    const r = await fetch(`${BASE}/board`, { mode: "cors" });
+    if (!r.ok) throw new Error(`GET /board -> ${r.status}`);
     return r.json();
   },
 
   /**
-   * Obtiene el ranking de mejores puntuaciones del juego.
-   *
-   * @async
-   * @returns {Promise<Array<Object>>} Array de puntuaciones ordenadas de mayor a menor:
-   *   - `nick_name` {string}: Apodo del jugador.
-   *   - `score` {number}: Puntuación obtenida.
-   *   - `country_code` {string}: Código del país del jugador.
-   *
-   * @throws {Error} Si hay problemas de conexión con la API.
+   * GET /ranking
    */
   async getRanking() {
-    const r = await fetch(`${BASE}/ranking`);
+    const r = await fetch(`${BASE}/ranking`, { mode: "cors" });
+    if (!r.ok) throw new Error(`GET /ranking -> ${r.status}`);
     return r.json();
   },
 
   /**
-   * Registra una nueva puntuación en el servidor.
-   *
-   * @async
-   * @param {Object} body - Datos de la puntuación a registrar.
-   * @param {string} body.nick_name - Apodo del jugador.
-   * @param {number} body.score - Puntuación obtenida.
-   * @param {string} body.country_code - Código ISO del país del jugador.
-   *
-   * @returns {Promise<Object>} Respuesta del servidor confirmando el registro.
-   *
-   * @throws {Error} Si hay problemas de conexión con la API o el servidor rechaza la puntuación.
-   *
-   * @example
-   * await Api.postScore({
-   *   nick_name: "Player1",
-   *   score: 2500,
-   *   country_code: "ES"
-   * });
+   * POST /score-recorder
+   * payload: { nick_name, score, country_code }
    */
   async scoreRecorder(payload) {
-    // payload: { nick_name, score, country_code }
-    const res = await fetch("/score-recorder", {
+    const r = await fetch(`${BASE}/score-recorder`, {
       method: "POST",
+      mode: "cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("score-recorder failed");
-    return res.json();
+    if (!r.ok) {
+      const msg = await r.text().catch(() => r.statusText);
+      throw new Error(`POST /score-recorder -> ${r.status} ${msg}`);
+    }
+    return r.json();
+  },
+
+  /**
+   * (Opcional) Registrar jugadores al iniciar con score = 0 usando /score-recorder.
+   * Si no quieres registrar al inicio, NO llames a esta función.
+   */
+  async registerPlayers(players) {
+    const ops = players.map(
+      (p) =>
+        this.scoreRecorder({
+          nick_name: p.nick,
+          score: 0,
+          country_code: p.country,
+        }).catch(() => null) // no bloquea el inicio si alguno falla
+    );
+    return Promise.all(ops);
   },
 };

@@ -1,110 +1,90 @@
-/**
- * @fileoverview Punto de entrada principal de la aplicación Monopoly.
- *
- * Este archivo contiene:
- * - Configuración inicial de la aplicación.
- * - Lógica de creación del formulario de jugadores.
- * - Inicialización del juego.
- * - Vinculación de controles de usuario.
- * - Gestión del ranking de puntuaciones.
- *
- * @author Teban6515
- * @version 1.0.0
- */
-
+// src/main.js
 import { Api } from "./api.js";
-import { Bank } from "./model/Bank.js";
-import { Board } from "./model/Board.js";
-import { Dice } from "./model/Dice.js";
 import { Game } from "./model/Game.js";
+import { Board } from "./model/Board.js";
 import { Player } from "./model/Player.js";
+import { Bank } from "./model/Bank.js";
 import { Rules } from "./model/Rules.js";
+import { Dice } from "./model/Dice.js";
 import { TurnManager } from "./model/TurnManager.js";
 import { Modals } from "./ui/Modals.js";
-import { Notifier } from "./ui/Notifier.js";
 import { Renderer } from "./ui/Renderer.js";
+import { Notifier } from "./ui/Notifier.js";
 
-// Inicialización de componentes UI principales
-/** @type {Renderer} Renderizador principal de la interfaz */
+// ===== UI principal =====
 const ui = new Renderer();
-
-/** Configuración de modales en el contenedor designado */
 ui.modals = new Modals(document.getElementById("modalRoot"));
 
-/**
- * Configura la funcionalidad del ranking de puntuaciones.
- *
- * Vincula el botón de actualizar ranking para:
- * - Obtener las mejores puntuaciones desde la API.
- * - Renderizar la lista con banderas de países y puntuaciones.
- * - Mostrar la información en el elemento 'rankingList'.
- *
- * 🏆 Formato de cada entrada del ranking:
- * - Bandera del país (usando flagsapi.com).
- * - Nombre del jugador en negrita.
- * - Puntuación obtenida.
- */
-function bindRanking() {
-  document.getElementById("refreshRanking").onclick = async () => {
+// Un único Notifier global (login + juego)
+const notifier = new Notifier();
+
+// ===== Ranking =====
+async function loadRanking() {
+  try {
     const rk = await Api.getRanking();
     const ul = document.getElementById("rankingList");
+    if (!ul) return;
     ul.innerHTML = rk
       .map(
         (r) => `
-      <li>
-        <img src="https://flagsapi.com/${(
-          r.country_code || "US"
-        ).toUpperCase()}/flat/24.png" alt="" />
-        <strong>${r.nick_name}</strong> — ${r.score}
-      </li>`
+        <li>
+          <img src="https://flagsapi.com/${(
+            r.country_code || "US"
+          ).toUpperCase()}/flat/24.png" alt="" />
+          <strong>${r.nick_name}</strong> — ${r.score}
+        </li>`
       )
       .join("");
-  };
+  } catch {
+    notifier.warn("No se pudo cargar el ranking", "Ranking");
+  }
+}
+function bindRanking() {
+  const btn = document.getElementById("refreshRanking");
+  if (btn) btn.onclick = () => loadRanking();
 }
 
-/**
- * Función principal de arranque que inicializa toda la aplicación.
- *
- * 🚀 Flujo de inicialización:
- * 1. Carga la lista de países desde la API.
- * 2. Configura el formulario dinámico de jugadores.
- * 3. Vincula el botón de inicio del juego.
- * 4. Configura el sistema de ranking.
- *
- * 👥 Gestión de jugadores:
- * - Permite seleccionar de 2 a N jugadores.
- * - Cada jugador tiene: nickname, país, y color de ficha.
- * - Genera colores aleatorios como valores por defecto.
- * - Crea nicknames automáticos si se dejan vacíos ("P1", "P2", etc.).
- *
- * 🎮 Inicio del juego:
- * - Crea instancias de todas las clases necesarias.
- * - Configura la interfaz de usuario.
- * - Expone el juego globalmente para debugging (`window.__game`).
- */
+// ===== Bootstrap/Login =====
 async function bootstrap() {
-  const countries = await Api.getCountries();
+  // Elementos del LOGIN
+  const startScreen = document.getElementById("startScreen");
+  const gameRoot = document.getElementById("gameRoot");
+  const gameFooter = document.getElementById("gameFooter");
   const playerCountSel = document.getElementById("playerCount");
   const playersForm = document.getElementById("playersForm");
-  const notifier = new Notifier();
-  
+  const startBtn = document.getElementById("startBtn");
 
-  /**
-   * Función anidada que regenera dinámicamente el formulario de jugadores.
-   *
-   * 📋 Para cada jugador crea:
-   * - Input de texto para el nickname (con placeholder automático).
-   * - Select con todos los países disponibles.
-   * - Input de color con valor hexadecimal aleatorio.
-   *
-   * 🎨 Generación de colores:
-   * - Genera un número aleatorio de 0 a 0xFFFFFF.
-   * - Lo convierte a hexadecimal y rellena con ceros a 6 dígitos.
-   * - Resultado: colores completamente aleatorios para cada jugador.
-   */
+  // Botón/target del hero (JUGAR) para desplazar al formulario
+  const heroPlayBtn = document.getElementById("heroPlayBtn");
+  const setupCard = document.getElementById("setupCard");
+  if (heroPlayBtn && setupCard) {
+    heroPlayBtn.onclick = () => {
+      setupCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      setupCard.animate(
+        [
+          { boxShadow: "0 0 0px #0000" },
+          { boxShadow: "0 0 0 6px #0004" },
+          { boxShadow: "0 0 0px #0000" },
+        ],
+        { duration: 600, easing: "ease-out" }
+      );
+    };
+  }
+
+  // 1) Cargar países
+  let countries = [];
+  try {
+    countries = await Api.getCountries();
+  } catch {
+    notifier.error("No se pudo cargar la lista de países.", "Backend");
+    return;
+  }
+
+  // 2) Form según n jugadores (vacío si no han elegido)
   function drawForm() {
     const n = +playerCountSel.value;
     playersForm.innerHTML = "";
+    if (!Number.isFinite(n) || n <= 0) return; // aún no eligieron
     for (let i = 0; i < n; i++) {
       const row = document.createElement("div");
       row.innerHTML = `
@@ -119,62 +99,57 @@ async function bootstrap() {
           0
         )
           .toString(16)
-          .padStart(6, "0")}" />`;
+          .padStart(6, "0")}" />
+      `;
       playersForm.appendChild(row);
     }
   }
   playerCountSel.onchange = drawForm;
   drawForm();
 
-  /**
-   * Manejador del botón "Iniciar Juego".
-   *
-   * 🏗️ Proceso de creación del juego:
-   * 1. Recopila datos del formulario (nicknames, países, colores).
-   * 2. Crea instancias de Player con datos o valores por defecto.
-   * 3. Instancia todas las clases del modelo de juego.
-   * 4. Configura el objeto de interfaz con métodos del renderizador.
-   * 5. Inicializa el juego y renderiza el estado inicial.
-   *
-   * 🔧 Configuración de UI:
-   * - `mount`: Vincula el renderizador al juego.
-   * - `renderBoard`: Dibuja el tablero.
-   * - `renderPlayers`: Muestra información de jugadores.
-   * - `renderTokens`: Posiciona fichas en el tablero.
-   * - `bindControls`: Configura botones de control.
-   * - `refresh`: Actualiza toda la interfaz.
-   * - `toast`: Muestra mensajes de notificación.
-   * - `modals`: Sistema de ventanas emergentes.
-   *
-   * 🌍 Debug global:
-   * El juego se expone como `window.__game` para poder inspeccionarlo
-   * desde las herramientas de desarrollador del navegador.
-   */
-  document.getElementById("startBtn").onclick = async () => {
+  // 3) Iniciar juego
+  startBtn.onclick = async () => {
     const inputs = [...playersForm.querySelectorAll(".nick")];
     const selects = [...playersForm.querySelectorAll(".country")];
     const colors = [...playersForm.querySelectorAll(".color")];
+
+    if (inputs.length === 0) {
+      notifier.warn("Primero selecciona el número de jugadores.", "Inicio");
+      return;
+    }
+
     const players = inputs.map(
       (inp, i) =>
         new Player({
           id: i + 1,
-          nick: inp.value || `P${i + 1}`,
+          nick: (inp.value || `P${i + 1}`).trim(),
           country: selects[i].value,
           tokenColor: colors[i].value,
         })
     );
-    const rawNicks = inputs.map((inp, i) => (inp.value || `P${i + 1}`).trim());
-    const normalized = rawNicks.map((n) => n.toLowerCase());
-    const hasDupes = new Set(normalized).size !== normalized.length;
-    if (hasDupes) {
-      // usa tu notifier si lo tienes expuesto (ya lo tienes como `notifier`)
-      notifier?.warn?.(
-        "Hay nombres de jugador repetidos. Cámbialos para continuar.",
-        "Nicks duplicados"
-      );
-      return; // corta aquí
+
+    // Validación de nicks duplicados
+    const nicks = players.map((p) => p.nick.toLowerCase());
+    const dup = nicks.find((n, i) => n && nicks.indexOf(n) !== i);
+    if (dup) {
+      notifier.warn(`El nickname "${dup}" ya existe. Cámbialo.`, "Validación");
+      return;
     }
-    
+
+    startBtn.disabled = true;
+
+    // Registrar jugadores si hay endpoint disponible (no bloquea si falla)
+    try {
+      if (typeof Api.registerPlayers === "function") {
+        await Api.registerPlayers(players);
+      } else if (typeof Api.createPlayers === "function") {
+        await Api.createPlayers(players);
+      }
+    } catch {
+      notifier.warn("No se pudieron registrar algunos jugadores.", "Backend");
+    }
+
+    // Instanciar Game
     const game = new Game({
       board: new Board(Api),
       players,
@@ -191,67 +166,60 @@ async function bootstrap() {
           ui.renderPlayers(game.players);
           ui.renderBoard(game.board);
           ui.renderTokens(game.players);
-          // 👉 usa el Notifier para cualquier “toast” viejo que llames desde otros lados
         },
         toast: (m) => notifier.info(m),
-        
-
-        // 👉 expón el notifier para que Rules/TurnManager lo usen
         notifier,
-
-        // Modales ya existentes
         modals: ui.modals,
       },
       api: Api,
     });
 
     window.__game = game;
-    await game.init();
 
-    ui.renderTokens(players);
+    // Mostrar juego
+    startScreen?.classList.add("hidden");
+    gameRoot?.classList.remove("hidden");
+    gameFooter?.classList.remove("hidden");
 
-    // Oculta la pantalla de inicio y muestra la interfaz del juego
-    const header = document.querySelector(".app-header");
-    if (header) header.style.display = "none";
-
-    const boardWrap = document.querySelector(".board-wrap");
-    if (boardWrap) boardWrap.style.marginTop = "0";
+    try {
+      await game.init();
+      ui.renderTokens(players);
+      // 🔄 Actualiza ranking al arrancar la partida
+      await loadRanking();
+    } catch (e) {
+      notifier.error(`No se pudo inicializar el juego: ${e.message}`, "Error");
+      startScreen?.classList.remove("hidden");
+      gameRoot?.classList.add("hidden");
+      gameFooter?.classList.add("hidden");
+    } finally {
+      startBtn.disabled = false;
+    }
   };
 
   bindRanking();
+  // Mostrar ranking al abrir la página
+  loadRanking();
 }
 
-/**
- * Configura los controles principales del juego una vez iniciado.
- *
- * 🎲 Botones vinculados:
- *
- * **Lanzar Dados Automático:**
- * - Ejecuta un lanzamiento aleatorio de dados.
- * - Mueve al jugador actual según el resultado.
- *
- * **Lanzar Dados Manual:**
- * - Permite introducir valores específicos para los dados.
- * - Útil para testing y debugging.
- * - Valida que ambos valores estén entre 1-6.
- *
- * **Terminar Juego:**
- * - Finaliza la partida inmediatamente.
- * - Calcula las posiciones finales.
- * - Muestra el ranking y registra puntuaciones.
- *
- * @param {Game} game - Instancia del juego a controlar.
- */
+// ===== Controles de juego =====
 function bindControls(game) {
   document.getElementById("rollBtn").onclick = () => game.rollDiceOrManual();
   document.getElementById("rollManualBtn").onclick = () => {
     const d1 = +document.getElementById("manualD1").value;
     const d2 = +document.getElementById("manualD2").value;
-    if (d1 >= 1 && d1 <= 6 && d2 >= 1 && d2 <= 6)
+    if (d1 >= 1 && d1 <= 6 && d2 >= 1 && d2 <= 6) {
       game.rollDiceOrManual({ d1, d2, total: d1 + d2 });
+    } else {
+      notifier.warn("Valores de dados inválidos (1–6).", "Dados");
+    }
   };
-  document.getElementById("endBtn").onclick = () => game.endGameManual();
+
+  // Al finalizar, recargar ranking
+  document.getElementById("endBtn").onclick = async () => {
+    await game.endGameManual();
+    await loadRanking();
+  };
 }
 
-// 🚀 Inicialización automática de la aplicación
+// auto-boot
 bootstrap();

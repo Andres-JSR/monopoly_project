@@ -1,435 +1,337 @@
-:root {
-  --bg: #7ec6c7;
-  --board-bg: #2c3a3b;
-  --center: #a9d7a3;
-  --ink: #161b1c;
-  --panel: #223033;
-  --card: #1b2628;
-  --accent: #e21f2f;
-  --cell: clamp(
-    54px,
-    6.2vmin,
-    64px
-  ); /* casilla mínima; escala con la ventana */
-  --sidebar: 290px; /* 280–320px según tu gusto */
-  --ring: 12%;
-}
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  height: 100%;
-}
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: "Press Start 2P", system-ui, sans-serif;
-  line-height: 1.35;
-}
-.crt {
-  position: relative;
-}
-.crt::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.06),
-    rgba(0, 0, 0, 0.06) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  pointer-events: none;
-  mix-blend-mode: multiply;
-}
-.app-header {
-  padding: 12px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 4px solid var(--ink);
-  background: linear-gradient(#9bd9da, #7ec6c7);
-}
-.logo-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.logo-title h1 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: 2px;
-  color: var(--accent);
-  text-shadow: 2px 2px 0 #000;
-}
-.logo-title .mr {
-  width: 48px;
-  height: 48px;
-  image-rendering: pixelated;
-}
-.setup {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.setup input,
-.setup select {
-  font-family: inherit;
-  font-size: 12px;
-  padding: 6px;
-  border: 3px solid var(--ink);
-  background: #fff;
-}
-.btn {
-  font-family: inherit;
-  font-size: 12px;
-  padding: 8px 10px;
-  border: 3px solid var(--ink);
-  background: #fff;
-  cursor: pointer;
-  box-shadow: 4px 4px 0 #0003;
-  transition: transform 0.05s;
-}
-.btn:active {
-  transform: translateY(1px);
-}
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-}
-.btn-danger {
-  background: #c62828;
-  color: #fff;
+:root{
+  --bg:#7ec6c7;
+  --board-bg:#2c3a3b;
+  --center:#a9d7a3;
+  --ink:#161b1c;
+  --panel:#223033;
+  --card:#1b2628;
+  --accent:#e21f2f;
+
+  /* 👇 Casillas ENORMES (y aún fluidas) */
+  --cell: clamp(96px, 12vmin, 140px);
+
+  /* Sidebar igual para conservar el layout */
+  --sidebar: 290px;
+
+  /* Centro más pequeño para ganar área útil perimetral */
+  --ring: 7%;
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: 1fr var(--sidebar);
-  gap: 14px;
-  padding: 16px;
+/* ===== Reset ===== */
+*{ box-sizing:border-box }
+html,body{ margin:0; height:100% }
+body{
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  line-height: 1.35;
 }
-.board-wrap {
+
+/* ===== Efecto CRT ===== */
+.crt{ position:relative; }
+.crt::after{
+  content:""; position:absolute; inset:0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.06), rgba(0,0,0,.06) 1px, transparent 1px, transparent 3px);
+  pointer-events:none; mix-blend-mode:multiply;
+}
+
+/* ===== Header / Setup ===== */
+.app-header{
+  padding:12px 18px; display:flex; justify-content:space-between; align-items:center;
+  border-bottom:4px solid var(--ink); background:linear-gradient(#9bd9da,#7ec6c7);
+}
+.logo-title{ display:flex; align-items:center; gap:12px }
+.logo-title h1{ margin:0; font-size:28px; letter-spacing: 2px; color:var(--accent); text-shadow: 2px 2px 0 #000; }
+.logo-title .mr{ width:48px; height:48px; image-rendering: pixelated; }
+
+.setup{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+.setup input, .setup select{ font-family:inherit; font-size:12px; padding:6px; border:3px solid var(--ink); background:#fff }
+.btn{ font-family:inherit; font-size:12px; padding:8px 10px; border:3px solid var(--ink);
+  background:#fff; cursor:pointer; box-shadow:4px 4px 0 #0003; transition: transform .05s; }
+.btn:active{ transform: translateY(1px) }
+.btn-primary{ background:var(--accent); color:#fff }
+.btn-danger{ background:#c62828; color:#fff }
+
+/* ===== Layout (tablero + sidebar) ===== */
+.layout{
+  display:grid; grid-template-columns: 1fr var(--sidebar); gap:16px; padding:16px;
+}
+
+/* ===== Tablero – tamaño PRIORIZA ANCHO de ventana ===== */
+/* En desktop el tablero puede exceder la altura de la ventana para lograr casillas más grandes */
+.board-wrap{
   background: var(--board-bg);
-  width: min(98vmin, 100%); /* cuadrado y centrado; escala con pantalla */
+
+  /* En lugar de vmin, usamos viewport width menos el sidebar y márgenes */
+  width: min( calc(100vw - var(--sidebar) - 48px), 1400px );
+  /* Si el contenedor principal tiene menos ancho, no sobrepasar */
+  max-width: 100%;
+
   margin: 0 auto;
-  border: 4px solid var(--ink);
-  border-radius: 10px;
-  padding: 12px;
-  position: relative;
+  border:4px solid var(--ink); border-radius:10px; padding:12px; position:relative;
   box-shadow: inset 0 0 0 6px #0004, 0 8px 0 #0003;
 }
 
-.board {
-  display: grid;
-  grid-template-columns: repeat(11, minmax(var(--cell), 1fr));
-  grid-template-rows: repeat(11, minmax(var(--cell), 1fr));
-  gap: 3px; /* 2–4px va bien */
-  aspect-ratio: 1 / 1;
-  position: relative;
-  width: 100%;
+/* Grid 11x11 con casillas gigantes */
+.board{
+  display:grid;
+  grid-template-columns: repeat(11, 1fr);   /* 1fr + tamaño fijado por wrap */
+  grid-template-rows:    repeat(11, 1fr);
+  gap: 1px;                               /* mínimo gap para ganar área */
+  aspect-ratio: 1 / 1;                    /* mantiene cuadrado */
+  position:relative; width:100%;
+
+  /* Forzamos que cada celda “se sienta” grande: el truco está en el tamaño del contenedor */
+  /* Ajustamos el tamaño mínimo visual con padding interno por celda si hiciera falta */
 }
-.board.pixel {
-  image-rendering: pixelated;
-}
-.board::after {
-  content: "";
-  position: absolute;
-  inset: var(--ring); /* 18–22% */
-  z-index: 0;
-  pointer-events: none;
-  background: var(--center);
-  border: 5px solid var(--ink);
-  box-shadow: inset 0 0 0 6px #0002;
-  border-radius: 8px;
+.board.pixel{ image-rendering: pixelated; }
+
+/* Aro central reducido para ampliar casillas del perímetro */
+.board::after{
+  content:""; position:absolute; inset: var(--ring);
+  background: var(--center); border:4px solid var(--ink);
+  box-shadow: inset 0 0 0 6px #0002; border-radius:8px;
 }
 
-.tile {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  background: #f2efe6;
-  border: 4px solid var(--ink);
-  border-width: 2px;
-  box-shadow: inset -3px -3px 0 #0002;
+/* ===== Casillas ===== */
+.tile{
+  position:relative; z-index:1; display:flex;
+  background:#f2efe6; border:1.5px solid var(--ink);
+  box-shadow: inset -2px -2px 0 #0002;
+  min-width: var(--cell);  /* percepción de tamaño por ancho */
+  min-height: var(--cell); /* y por alto */
 }
-.tile .inner {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 2px;
+.tile .inner{
+  width:100%; height:100%; display:flex; flex-direction:column; padding:4px;
 }
-.tile .stripe {
-  height: 10px;
-  margin: -4px -4px 4px -4px;
-  background: #000;
+.tile .stripe{
+  height:12px; margin:-4px -4px 6px -4px; background:#000;
 }
-.tile .name {
-  font-size: clamp(9px, 1.05vmin, 12px);
-  line-height: 1.2;
-  text-align: center;
-  white-space: normal; /* salto solo en espacios */
+
+/* Texto grande y sin cortes raros */
+.tile .name{
+  font-size: clamp(12px, 1.35vmin, 16px);
+  line-height: 1.22;
+  text-align:center;
+  white-space: normal;
   overflow-wrap: normal;
-  word-break: keep-all; /* no cortar palabras */
+  word-break: keep-all;
   hyphens: none;
 }
-.tile .state {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  font-size: 8px;
-  color: #000;
-}
-.tile .build {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  font-size: 12px;
-}
-.tile .inner {
-  writing-mode: horizontal-tb;
-}
-.tile.side-left .inner {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-.tile.side-right .inner {
-  writing-mode: vertical-rl;
-}
-.tile.side-top .inner {
-  writing-mode: horizontal-tb;
-}
-.tile.side-bottom .inner {
-  writing-mode: horizontal-tb;
-}
 
-.tile .tokens {
-  position: absolute;
-  left: 3px;
-  bottom: 3px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  max-width: 80%;
+/* Marcadores / estado */
+.tile .state{ position:absolute; top:6px; right:6px; font-size:10px; color:#000 }
+.tile .build{ position:absolute; bottom:6px; right:6px; font-size:13px }
+
+/* Orientaciones laterales */
+.tile .inner{ writing-mode: horizontal-tb }
+.tile.side-left  .inner{ writing-mode: vertical-rl; transform: rotate(180deg); }
+.tile.side-right .inner{ writing-mode: vertical-rl; }
+.tile.side-top   .inner{ writing-mode: horizontal-tb; }
+.tile.side-bottom .inner{ writing-mode: horizontal-tb; }
+
+/* Fichas más grandes para estas casillas */
+.tile .tokens{
+  position:absolute; left:6px; bottom:6px; display:flex; flex-wrap:wrap; gap:5px; max-width:80%;
 }
-.token {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #000;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 7px;
-  line-height: 1;
+.token{ width:16px; height:16px; border:2px solid #000; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; line-height:1;
   text-shadow: -1px 0 #000, 0 1px #000, 1px 0 #000, 0 -1px #000;
 }
 
-.players-panel .player {
-  display: flex;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px dashed #2e3d40;
-}
-.players-panel .money {
-  margin-left: auto;
-}
-.card {
-  background: var(--panel);
-  border: 4px solid var(--ink);
-  color: #eaf5f2;
-  box-shadow: inset -4px -4px 0 #00000020, 0 8px 0 #0003;
-}
-.ranking-panel button {
-  margin: 8px;
-}
-.footer {
-  text-align: center;
-  padding: 10px 6px;
-  border-top: 4px solid var(--ink);
-  background: linear-gradient(#9bd9da, #7ec6c7);
-}
+/* ===== Sidebar ===== */
+.players-panel .player{ display:flex; gap:8px; padding:6px 8px; border-bottom:1px dashed #2e3d40 }
+.players-panel .money{ margin-left:auto }
+.card{ background: var(--panel); border:4px solid var(--ink); color:#eaf5f2; box-shadow: inset -4px -4px 0 #00000020, 0 8px 0 #0003; }
+.ranking-panel button{ margin:8px }
 
-.modal__backdrop {
-  position: fixed;
-  inset: 0;
-  background: #0008;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.modal {
-  background: #fff;
-  color: #000;
-  border: 4px solid var(--ink);
-  border-radius: 8px;
-  padding: 16px;
-  min-width: 320px;
-  max-width: 92vw;
-  font-family: "Press Start 2P", system-ui, sans-serif;
-}
-.modal header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.modal h3 {
-  margin: 0;
-  font-size: 14px;
-}
-.modal .actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-.modal button {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 3px solid var(--ink);
-  background: #eee;
-  color: #000;
-}
-.modal button.primary {
-  background: var(--accent);
-  color: #fff;
-}
-.modal button.ghost {
-  background: transparent;
-}
+/* ===== Footer ===== */
+.footer{ text-align:center; padding:10px 6px; border-top:4px solid var(--ink); background:linear-gradient(#9bd9da,#7ec6c7); }
 
-.tooltip {
-  position: fixed;
-  z-index: 1500;
-  background: #fff;
-  color: #000;
-  border: 4px solid var(--ink);
-  border-radius: 8px;
-  padding: 10px;
-  max-width: 280px;
-  box-shadow: 6px 6px 0 #0003;
-  font-family: "Press Start 2P", system-ui, sans-serif;
-}
-.tooltip h4 {
-  margin: 0 0 6px 0;
-  font-size: 12px;
-}
-.tooltip .row {
-  font-size: 10px;
-  margin: 2px 0;
-}
-.tooltip .stripe {
-  height: 10px;
-  margin: -6px -6px 6px -6px;
-  border-bottom: 3px solid #000;
-}
+/* ===== Modales / Tooltip / Dados ===== */
+.modal__backdrop{position:fixed; inset:0; background:#0008; display:flex; align-items:center; justify-content:center; z-index:1000}
+.modal{ background:#fff; color:#000; border:4px solid var(--ink); border-radius:8px; padding:16px; min-width:320px; max-width:92vw; font-family: 'Press Start 2P', system-ui, sans-serif; }
+.modal header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.modal h3{margin:0;font-size:14px}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal button{padding:8px 12px;border-radius:6px;border:3px solid var(--ink);background:#eee;color:#000}
+.modal button.primary{background:var(--accent);color:#fff}
+.modal button.ghost{background:transparent}
 
-.dice-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.last-roll {
-  font-size: 12px;
-}
-@media (max-width: 980px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-  .board {
-    grid-template-columns: repeat(11, minmax(32px, 1fr));
-    grid-template-rows: repeat(11, minmax(32px, 1fr));
-  }
-}
-/* ===== Toast retro pulido ===== */
-#toastContainer.toast-container{
-  position: fixed !important;
-  top: 14px !important;
-  right: 14px !important;
-  left: auto !important;
-  bottom: auto !important;
-  z-index: 9999 !important;
-  display: flex; flex-direction: column; gap: 10px;
-  pointer-events: none;
-}
+.tooltip{ position: fixed; z-index: 1500; background: #fff; color:#000; border:4px solid var(--ink); border-radius:8px; padding:10px; max-width: 280px;
+  box-shadow: 6px 6px 0 #0003; font-family: 'Press Start 2P', system-ui, sans-serif; }
+.tooltip h4{ margin: 0 0 6px 0; font-size: 12px; }
+.tooltip .row{ font-size: 10px; margin: 2px 0; }
+.tooltip .stripe{ height:10px; margin:-6px -6px 6px -6px; border-bottom: 3px solid #000; }
 
-#toastContainer .toast{
-  pointer-events: auto;
-  background: #fff;
-  color: var(--ink);
-  border: 3px solid var(--ink);
-  border-radius: 10px;
-  padding: 10px 12px 10px 12px;
-  min-width: 260px;
-  max-width: 380px;
-  box-shadow: 0 6px 0 #0003, inset -3px -3px 0 #0002;
-  font-family: 'Press Start 2P', system-ui, sans-serif;
-  font-size: 11px; line-height: 1.35;
+.dice-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px }
+.last-roll{ font-size:12px }
+
+/* ===== Responsivo ===== */
+/* 1) Ligeramente más pequeño si el ancho total no da */
+@media (max-width: 1400px){
+  :root{ --cell: clamp(88px, 11vmin, 128px); }
+  .board-wrap{ width: min( calc(100vw - var(--sidebar) - 40px), 1200px ); }
+}
+/* 2) En <= 1200px seguimos reduciendo para evitar sobre-flujo desmedido */
+@media (max-width: 1200px){
+  :root{ --cell: clamp(80px, 10vmin, 120px); --ring: 7.5%; }
+  .board-wrap{ width: min( calc(100vw - var(--sidebar) - 32px), 1080px ); }
+}
+/* 3) En <= 980px pasamos a 1 columna: tablero arriba, sidebar abajo */
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 1fr; }
+  :root{ --sidebar: 100%; --cell: clamp(72px, 12vmin, 110px); --ring: 9%; }
+  .board-wrap{ width: min(100vw - 24px, 100%); margin: 0 auto; }
+}
+/* 4) En móviles compactos */
+@media (max-width: 600px){
+  :root{ --cell: clamp(60px, 14vmin, 96px); --ring: 10.5%; }
+  .tile .name{ font-size: clamp(12px, 3vmin, 16px); }
+}
+/* Utilidad para ocultar contenedores */
+.hidden{ display:none !important; }
+
+/* Pantalla inicial a pantalla completa */
+.start-screen{
+  min-height: 100vh;
   display: grid;
-  grid-template-columns: auto 1fr auto; /* icono | texto | cerrar */
-  gap: 8px; align-items: start;
-
-  transform: translateY(-8px);
-  opacity: 0;
-  animation: toast-in .18s ease-out forwards, toast-out .25s ease-in forwards 4.6s;
+  grid-template-rows: auto 1fr;
+  background: var(--bg);
+}
+.start-inner{
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.start-card{
+  max-width: 960px; width: 100%;
+  padding: 18px;
 }
 
-#toastContainer .toast strong{ display:block; margin-bottom:4px; font-size:12px; letter-spacing: .3px; }
-#toastContainer .toast .icon{ font-size:14px; line-height: 1; margin-top: 2px; }
-#toastContainer .toast .close{ border:none; background:transparent; cursor:pointer; font-size:14px; line-height:1; opacity:.7 }
-#toastContainer .toast .close:hover{ opacity:1 }
-
-#toastContainer .toast.success{ background:#eaf8ed; border-color:#215c2a; }
-#toastContainer .toast.info   { background:#e9f1ff; border-color:#233a8b; }
-#toastContainer .toast.warn   { background:#fff5d7; border-color:#8a6d3b; }
-#toastContainer .toast.error  { background:#fdecec; border-color:#8b1e1e; }
-
-@keyframes toast-in { to { opacity:1; transform: translateY(0); } }
-@keyframes toast-out{ to { opacity:0; transform: translateY(-8px); } }
-
-/* fallback si la animación no corre */
-#toastContainer .toast.show{ opacity:1 !important; transform:none !important; animation:none !important; }
-
-/* responsive: un poco más angosto en pantallas pequeñas */
-@media (max-width: 900px){
-  #toastContainer .toast{ min-width:220px; max-width:300px; font-size:10px; }
+/* Form de jugadores del login */
+.setup-row{
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
 }
-/* ====== Panel de jugadores con propiedades ====== */
-.players-panel .player{
-  display:flex; flex-direction:column; gap:6px; padding:8px;
-  border-bottom:1px dashed #2e3d40;
+.players-form > div{
+  display:grid; grid-template-columns: 1fr 180px 120px;
+  gap:10px; align-items:center; margin: 8px 0;
 }
-.player .row{ display:flex; align-items:center; gap:8px }
-.player .nick{ font-weight:bold }
-.player .money{ margin-left:auto }
+.players-form input.nick{
+  padding:8px; border:3px solid var(--ink);
+  font-family: inherit;
+}
+.players-form select.country{
+  padding:8px; border:3px solid var(--ink);
+  font-family: inherit;
+}
+.players-form input.color{
+  height: 36px; border:3px solid var(--ink);
+}
+/* ===================== HERO LOGIN ===================== */
+.start-screen{
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--bg);
+  padding: 16px;
+}
 
-.player details{
-  background: var(--card); border:3px solid var(--ink);
-  border-radius:8px; padding:6px 8px;
+/* Título rojo grande */
+.brand{
+  margin: 0 0 12px 0;
+  text-align: center;
+  font-size: clamp(28px, 4.5vw, 44px);
+  color: #ff1f2f;               /* rojo más vivo */
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 2px;
 }
-.player details summary{
-  cursor:pointer; list-style:none; font-size:11px; outline:none;
-}
-.player details[open] summary{ opacity:.95 }
 
-.prop-list{ margin:6px 0 0 0; padding:0; list-style:none; display:grid; gap:6px }
-.prop-item{
-  background:#0e1617; border:2px solid var(--ink);
-  border-radius:6px; padding:6px; display:flex; gap:8px; align-items:center;
-  font-size:10px;
+/* Contenedor del hero centrado */
+.hero{
+  display: grid;
+  justify-content: center;
+  margin-top: 6px;
 }
-.prop-item .stripe{ width:8px; height:16px; border:2px solid #000; }
-.prop-item .name{ font-weight:600 }
-.prop-item .badge{ margin-left:auto; font-size:10px; padding:2px 6px;
-  border:2px solid var(--ink); border-radius:6px; }
-.badge.mort{ background:#402d2d; color:#fff }   /* hipotecada */
-.badge.hh{ background:#2b3b2d; color:#fff }     /* casas/hotel */
-.badge.rr{ background:#26334f; color:#fff }     /* railroad/utility */
+
+/* Tarjeta central con la imagen y CTA */
+.hero-card{
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  background: #bfe6ef;          /* celeste claro como tu captura */
+  border: 4px solid var(--ink);
+  padding: 14px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* Marco de la imagen (doble borde retro) */
+.hero-frame{
+  padding: 8px;
+  background: #d9f2f6;
+  border: 4px solid var(--ink);
+  box-shadow: inset 0 0 0 4px #000;
+}
+.hero-img{
+  display: block;
+  width: clamp(160px, 38vw, 260px);
+  height: auto;
+  image-rendering: pixelated;
+  border: 4px solid var(--ink);
+}
+
+/* Eslogan */
+.tagline{
+  margin: 0;
+  text-align: center;
+  font-size: clamp(12px, 2.5vw, 14px);
+  color: #000;
+}
+
+/* Botón grande */
+.btn-lg{
+  padding: 12px 18px;
+  font-size: 14px;
+  box-shadow: 4px 4px 0 #0003;
+}
+
+/* Tarjeta del setup debajo del hero */
+.start-inner{
+  display: flex; align-items: start; justify-content: center;
+  padding: 16px 0 24px;
+}
+.start-card{
+  max-width: 900px; width: 100%;
+  background: #c8ecf4;
+}
+.setup-title{
+  margin: 0 0 10px 0;
+  text-align: center;
+  color: #000;
+}
+
+/* Fila del select */
+.setup-row{
+  display:flex; justify-content:center; gap:10px; margin-bottom:12px;
+}
+#playerCount{
+  font-family: inherit; font-size: 14px;
+  padding: 10px; min-width: 220px;
+  border: 3px solid var(--ink); background: #fff;
+}
+
+/* Form de jugadores */
+.players-form > div{
+  display:grid; grid-template-columns: 1fr 180px 120px;
+  gap: 10px; align-items: center; margin: 8px 0;
+}
+.players-form input.nick{ padding:8px; border:3px solid var(--ink); font-family: inherit; }
+.players-form select.country{ padding:8px; border:3px solid var(--ink); font-family: inherit; }
+.players-form input.color{ height: 36px; border:3px solid var(--ink); }
+
+/* Responsive */
+@media (max-width: 640px){
+  .players-form > div{ grid-template-columns: 1fr 1fr 100px; }
+  #playerCount{ min-width: 0; width: 100%; }
+  .hero-card{ max-width: 96vw; }
+}
+
